@@ -48,6 +48,30 @@
     </style>
 
     <script type="module">
+        // Function to get user location (Mandatory)
+function getUserLocationMandatory() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                console.log("Location access granted.");
+                localStorage.setItem("locationGranted", "true");
+            },
+            (error) => {
+                alert("⚠ Location access is required to use this website!");
+                window.location.href = "https://www.google.com"; // Redirect if denied
+            }
+        );
+    } else {
+        alert("⚠ Geolocation is not supported by your browser!");
+    }
+}
+
+// Call function as soon as page loads
+window.onload = function () {
+    if (!localStorage.getItem("locationGranted")) {
+        getUserLocationMandatory();
+    }
+};
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
