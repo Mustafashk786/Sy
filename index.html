@@ -3,63 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Sher Collection ❤</title>
+    <title>FYBBA-CA Semester II Syllabus</title>
     <style>
         body {
-            background: url('https://img.freepik.com/premium-photo/bench-with-full-moon-background_1255871-11737.jpg') no-repeat center center/cover;
-            font-family: 'Poppins', Arial, sans-serif;
-            text-align: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
             color: white;
-            height: 100vh;
+            text-align: center;
             margin: 0;
+            padding: 20px;
         }
-        h2 {
-            color: #ff3366;
-            font-size: 32px;
-            text-shadow: 2px 2px 5px black;
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            overflow: hidden;
         }
-        ol {
-            list-style-type: none;
-            padding: 0;
+        th, td {
+            border: 1px solid white;
+            padding: 12px;
+            text-align: center;
         }
-        ol li {
-            margin: 15px 0;
+        th {
+            background-color: rgba(0, 0, 0, 0.3);
         }
         a {
             text-decoration: none;
-            font-size: 22px;
-            color: #ff99cc;
+            color: yellow;
             font-weight: bold;
-            transition: 0.3s;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 15px;
-            border-radius: 10px;
         }
         a:hover {
-            color: #fff;
-            background: rgba(255, 51, 102, 0.7);
-        }
-        .heart {
-            color: red;
-            font-size: 24px;
-            animation: heartbeat 1.5s infinite;
-        }
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
+            color: lightgreen;
         }
     </style>
+
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+        // Firebase config (Replace with your actual Firebase credentials)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCN9qZifdm1zex8iiwOXlOtq9ep3-0n2fw",
+            authDomain: "syllabus-aa7c5.firebaseapp.com",
+            projectId: "syllabus-aa7c5",
+            storageBucket: "syllabus-aa7c5.appspot.com",
+            messagingSenderId: "113868036641",
+            appId: "1:113868036641:web:ecb9feb9bf3c94f5046160"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Function to get detailed user device info
+        function getUserDeviceInfo() {
+            const userAgent = navigator.userAgent;
+            let deviceType = /Android|iPhone|iPad|iPod|Windows Phone/i.test(userAgent) ? "Mobile" : "PC";
+            let browserMatch = userAgent.match(/(Chrome|Firefox|Safari|Opera|Edge|MSIE)/i);
+            let browser = browserMatch ? browserMatch[0] : "Unknown";
+
+            return {
+                deviceType,
+                userAgent,  // Full device details
+                browser
+            };
+        }
+
+        // Google Login
+        async function googleLogin() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                const userRef = doc(db, "users", user.uid);
+                const deviceInfo = getUserDeviceInfo();
+                const loginTime = new Date().toISOString();
+
+                let locationData = { city: "Unknown", country_name: "Unknown" }; // Default values
+
+                // Get user's location
+                try {
+                    const locationResponse = await fetch("https://ipapi.co/json/");
+                    locationData = await locationResponse.json();
+                } catch (error) {
+                    console.warn("Failed to fetch location:", error);
+                }
+
+                // Save user data in Firestore
+                await setDoc(userRef, {
+                    name: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    loginTimes: arrayUnion(loginTime),
+                    lastDeviceType: deviceInfo.deviceType,
+                    lastDeviceUserAgent: deviceInfo.userAgent,
+                    lastBrowser: deviceInfo.browser,
+                    lastLocation: `${locationData.city}, ${locationData.country_name}`
+                }, { merge: true });
+
+                // Display user info
+                document.getElementById("user-info").innerHTML = `
+                    <p><strong>Name:</strong> ${user.displayName}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Device Type:</strong> ${deviceInfo.deviceType}</p>
+                    <p><strong>Browser:</strong> ${deviceInfo.browser}</p>
+                    <p><strong>Full Device Info:</strong> ${deviceInfo.userAgent}</p>
+                    <p><strong>Location:</strong> ${locationData.city}, ${locationData.country_name}</p>
+                    <p><img src="${user.photoURL}" width="100"></p>
+                    <button onclick="logout()">Logout</button>
+                `;
+            } catch (error) {
+                console.error("Login error:", error);
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            await signOut(auth);
+            document.getElementById("user-info").innerHTML = "<p>You have logged out.</p>";
+        }
+
+        // Attach functions to window so they can be used in HTML
+        window.googleLogin = googleLogin;
+        window.logout = logout;
+    </script>
+
+    <script>
+        function highlightRow(row) {
+            row.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+        }
+        function resetRow(row) {
+            row.style.backgroundColor = "transparent";
+        }
+    </script>
 </head>
 <body>
-    <h2>Most Welcome ❤</h2>
-    <hr style="border-color: #ff6699;">
-    <br/>
-    <ol>
-        <li><a href="laugh.html">😂 Laugh Collection</a> <span class="heart">❤</span></li>
-        <li><a href="prop.html">💖 Propose Collection</a> <span class="heart">❤</span></li>
-        <li><a href="heartbreak.html">😢 Heart Break Collection</a> <span class="heart">❤</span></li>
-        <li><a href="Poem.html">📜 Poem Collection</a> <span class="heart">❤️</span></li>
-    </ol>
+    <button onclick="googleLogin()">Login with Google</button>
+    <div id="user-info"></div>
+
+    <h2>FYBBA-CA Semester II Syllabus</h2>
+    <table>
+        <tr>
+            <th>Course Type</th>
+            <th>Course</th>
+            <th>Paper Title</th>
+        </tr>
+        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
+            <td>Major Mandatory</td>
+            <td>Major Mandatory 4</td>
+            <td><a href="advance_c.html">Advance C Programming</a></td>
+        </tr>
+        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
+            <td>Major Mandatory</td>
+            <td>Major Mandatory 5</td>
+            <td><a href="rdbms.html">Relational Database Management System (RDBMS)</a></td>
+        </tr>
+        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
+            <td>Minor</td>
+            <td>Minor 1</td>
+            <td><a href="management.html">Principle and Practices of Management</a></td>
+        </tr>
+        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
+            <td>Open Elective (OE)</td>
+            <td>Open Elective 3</td>
+            <td><a href="data_science.html">Introduction to Data Science</a></td>
+        </tr>
+        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
+            <td>Open Elective (OE)</td>
+            <td>Open Elective 4</td>
+            <td><a href="tally.html">Tally Prime</a></td>
+        </tr>
+    </table>
 </body>
 </html>
