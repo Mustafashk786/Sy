@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDBMS Syllabus</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        .unit {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #ddd;
+            cursor: pointer;
+        }
+        .content {
+            display: none;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>RDBMS Syllabus</h2>
+        <div class="unit" onclick="toggleContent('unit1')">Unit 1: Introduction to RDBMS</div>
+        <div class="content" id="unit1">Concept of DBMS, Advantages, ER Model, Keys, Normalization, etc.</div>
+
+        <div class="unit" onclick="toggleContent('unit2')">Unit 2: SQL & PL/SQL</div>
+        <div class="content" id="unit2">DDL, DML, DCL, TCL commands, Procedures, Functions, Triggers, Cursors.</div>
+
+        <div class="unit" onclick="toggleContent('unit3')">Unit 3: Transaction Management</div>
+        <div class="content" id="unit3">ACID properties, Serializability, Concurrency Control Techniques.</div>
+    </div>
+
+    <script>
+        function toggleContent(id) {
+            var content = document.getElementById(id);
+            if (content.style.display === "none" || content.style.display === "") {
+                content.style.display = "block";
+            } else {
+                content.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
