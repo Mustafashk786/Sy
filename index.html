@@ -34,19 +34,24 @@
             text-decoration: none;
             color: yellow;
             font-weight: bold;
+            pointer-events: none; /* Links disabled until login */
         }
         a:hover {
             color: lightgreen;
         }
+        #login-btn, #logout-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
     </style>
 
     <script type="module">
-        // Import Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
-        // Firebase config (Replace with your actual Firebase credentials)
         const firebaseConfig = {
             apiKey: "AIzaSyCN9qZifdm1zex8iiwOXlOtq9ep3-0n2fw",
             authDomain: "syllabus-aa7c5.firebaseapp.com",
@@ -56,27 +61,19 @@
             appId: "1:113868036641:web:ecb9feb9bf3c94f5046160"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Function to get detailed user device info
         function getUserDeviceInfo() {
             const userAgent = navigator.userAgent;
             let deviceType = /Android|iPhone|iPad|iPod|Windows Phone/i.test(userAgent) ? "Mobile" : "PC";
             let browserMatch = userAgent.match(/(Chrome|Firefox|Safari|Opera|Edge|MSIE)/i);
             let browser = browserMatch ? browserMatch[0] : "Unknown";
-
-            return {
-                deviceType,
-                userAgent,  // Full device details
-                browser
-            };
+            return { deviceType, userAgent, browser };
         }
 
-        // Google Login
         async function googleLogin() {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -85,9 +82,7 @@
                 const deviceInfo = getUserDeviceInfo();
                 const loginTime = new Date().toISOString();
 
-                let locationData = { city: "Unknown", country_name: "Unknown" }; // Default values
-
-                // Get user's location
+                let locationData = { city: "Unknown", country_name: "Unknown" };
                 try {
                     const locationResponse = await fetch("https://ipapi.co/json/");
                     locationData = await locationResponse.json();
@@ -95,7 +90,6 @@
                     console.warn("Failed to fetch location:", error);
                 }
 
-                // Save user data in Firestore
                 await setDoc(userRef, {
                     name: user.displayName,
                     email: user.email,
@@ -107,78 +101,70 @@
                     lastLocation: `${locationData.city}, ${locationData.country_name}`
                 }, { merge: true });
 
-                // Display user info
-                document.getElementById("user-info").innerHTML = `
-                    <p><strong>Name:</strong> ${user.displayName}</p>
-                    <p><strong>Email:</strong> ${user.email}</p>
-                    <p><strong>Device Type:</strong> ${deviceInfo.deviceType}</p>
-                    <p><strong>Browser:</strong> ${deviceInfo.browser}</p>
-                    <p><strong>Full Device Info:</strong> ${deviceInfo.userAgent}</p>
-                    <p><strong>Location:</strong> ${locationData.city}, ${locationData.country_name}</p>
-                    <p><img src="${user.photoURL}" width="100"></p>
-                    <button onclick="logout()">Logout</button>
-                `;
+                localStorage.setItem("userLoggedIn", "true"); // Save login state
+                updateUI(user, deviceInfo, locationData);
             } catch (error) {
                 console.error("Login error:", error);
             }
         }
 
-        // Logout function
-        async function logout() {
-            await signOut(auth);
-            document.getElementById("user-info").innerHTML = "<p>You have logged out.</p>";
+        function updateUI(user, deviceInfo, locationData) {
+            document.getElementById("user-info").innerHTML = `
+                <p><strong>Name:</strong> ${user.displayName}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Device Type:</strong> ${deviceInfo.deviceType}</p>
+                <p><strong>Browser:</strong> ${deviceInfo.browser}</p>
+                <p><strong>Location:</strong> ${locationData.city}, ${locationData.country_name}</p>
+                <p><img src="${user.photoURL}" width="100"></p>
+                <button id="logout-btn" onclick="logout()">Logout</button>
+            `;
+            document.getElementById("login-btn").style.display = "none";
+            enableLinks();
         }
 
-        // Attach functions to window so they can be used in HTML
+        function enableLinks() {
+            const links = document.querySelectorAll("a");
+            links.forEach(link => link.style.pointerEvents = "auto");
+        }
+
+        async function logout() {
+            await signOut(auth);
+            localStorage.removeItem("userLoggedIn"); // Remove login state
+            document.getElementById("user-info").innerHTML = "";
+            document.getElementById("login-btn").style.display = "block";
+            disableLinks();
+        }
+
+        function disableLinks() {
+            const links = document.querySelectorAll("a");
+            links.forEach(link => link.style.pointerEvents = "none");
+        }
+
+        onAuthStateChanged(auth, user => {
+            if (user || localStorage.getItem("userLoggedIn")) {
+                enableLinks();
+                updateUI(user, getUserDeviceInfo(), { city: "Unknown", country_name: "Unknown" });
+            } else {
+                disableLinks();
+            }
+        });
+
         window.googleLogin = googleLogin;
         window.logout = logout;
     </script>
-
-    <script>
-        function highlightRow(row) {
-            row.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
-        }
-        function resetRow(row) {
-            row.style.backgroundColor = "transparent";
-        }
-    </script>
 </head>
 <body>
-    <button onclick="googleLogin()">Login with Google</button>
+    <button id="login-btn" onclick="googleLogin()">Login with Google</button>
     <div id="user-info"></div>
 
     <h2>FYBBA-CA Semester II Syllabus</h2>
     <table>
-        <tr>
-            <th>Course Type</th>
-            <th>Course</th>
-            <th>Paper Title</th>
-        </tr>
-        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
-            <td>Major Mandatory</td>
-            <td>Major Mandatory 4</td>
-            <td><a href="advance_c.html">Advance C Programming</a></td>
-        </tr>
-        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
-            <td>Major Mandatory</td>
-            <td>Major Mandatory 5</td>
-            <td><a href="rdbms.html">Relational Database Management System (RDBMS)</a></td>
-        </tr>
-        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
-            <td>Minor</td>
-            <td>Minor 1</td>
-            <td><a href="management.html">Principle and Practices of Management</a></td>
-        </tr>
-        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
-            <td>Open Elective (OE)</td>
-            <td>Open Elective 3</td>
-            <td><a href="data_science.html">Introduction to Data Science</a></td>
-        </tr>
-        <tr onmouseover="highlightRow(this)" onmouseout="resetRow(this)">
-            <td>Open Elective (OE)</td>
-            <td>Open Elective 4</td>
-            <td><a href="tally.html">Tally Prime</a></td>
-        </tr>
+        <tr><th>Course Type</th><th>Course</th><th>Paper Title</th></tr>
+        <tr><td>Major Mandatory</td><td>Major Mandatory 4</td><td><a href="advance_c.html">Advance C Programming</a></td></tr>
+        <tr><td>Major Mandatory</td><td>Major Mandatory 5</td><td><a href="rdbms.html">Relational Database Management System (RDBMS)</a></td></tr>
+        <tr><td>Minor</td><td>Minor 1</td><td><a href="management.html">Principle and Practices of Management</a></td></tr>
+        <tr><td>Open Elective (OE)</td><td>Open Elective 3</td><td><a href="data_science.html">Introduction to Data Science</a></td></tr>
+        <tr><td>Open Elective (OE)</td><td>Open Elective 4</td><td><a href="tally.html">Tally Prime</a></td></tr>
     </table>
 </body>
 </html>
