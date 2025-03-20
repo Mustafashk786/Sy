@@ -74,6 +74,27 @@
             return { deviceType, userAgent, browser };
         }
 
+        function getUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            resolve({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            });
+                        },
+                        (error) => {
+                            console.warn("Geolocation error:", error);
+                            resolve({ latitude: "Unknown", longitude: "Unknown" });
+                        }
+                    );
+                } else {
+                    resolve({ latitude: "Unknown", longitude: "Unknown" });
+                }
+            });
+        }
+
         async function googleLogin() {
             try {
                 const result = await signInWithPopup(auth, provider);
@@ -87,8 +108,10 @@
                     const locationResponse = await fetch("https://ipapi.co/json/");
                     locationData = await locationResponse.json();
                 } catch (error) {
-                    console.warn("Failed to fetch location:", error);
+                    console.warn("Failed to fetch IP location:", error);
                 }
+
+                const geoLocation = await getUserLocation();
 
                 await setDoc(userRef, {
                     name: user.displayName,
@@ -98,23 +121,26 @@
                     lastDeviceType: deviceInfo.deviceType,
                     lastDeviceUserAgent: deviceInfo.userAgent,
                     lastBrowser: deviceInfo.browser,
-                    lastLocation: `${locationData.city}, ${locationData.country_name}`
+                    lastLocation: `${locationData.city}, ${locationData.country_name}`,
+                    latitude: geoLocation.latitude,
+                    longitude: geoLocation.longitude
                 }, { merge: true });
 
                 localStorage.setItem("userLoggedIn", "true"); // Save login state
-                updateUI(user, deviceInfo, locationData);
+                updateUI(user, deviceInfo, locationData, geoLocation);
             } catch (error) {
                 console.error("Login error:", error);
             }
         }
 
-        function updateUI(user, deviceInfo, locationData) {
+        function updateUI(user, deviceInfo, locationData, geoLocation) {
             document.getElementById("user-info").innerHTML = `
                 <p><strong>Name:</strong> ${user.displayName}</p>
                 <p><strong>Email:</strong> ${user.email}</p>
                 <p><strong>Device Type:</strong> ${deviceInfo.deviceType}</p>
                 <p><strong>Browser:</strong> ${deviceInfo.browser}</p>
                 <p><strong>Location:</strong> ${locationData.city}, ${locationData.country_name}</p>
+                <p><strong>GPS Coordinates:</strong> ${geoLocation.latitude}, ${geoLocation.longitude}</p>
                 <p><img src="${user.photoURL}" width="100"></p>
                 <button id="logout-btn" onclick="logout()">Logout</button>
             `;
@@ -123,8 +149,7 @@
         }
 
         function enableLinks() {
-            const links = document.querySelectorAll("a");
-            links.forEach(link => link.style.pointerEvents = "auto");
+            document.querySelectorAll("a").forEach(link => link.style.pointerEvents = "auto");
         }
 
         async function logout() {
@@ -136,14 +161,14 @@
         }
 
         function disableLinks() {
-            const links = document.querySelectorAll("a");
-            links.forEach(link => link.style.pointerEvents = "none");
+            document.querySelectorAll("a").forEach(link => link.style.pointerEvents = "none");
         }
 
-        onAuthStateChanged(auth, user => {
+        onAuthStateChanged(auth, async user => {
             if (user || localStorage.getItem("userLoggedIn")) {
+                const geoLocation = await getUserLocation();
                 enableLinks();
-                updateUI(user, getUserDeviceInfo(), { city: "Unknown", country_name: "Unknown" });
+                updateUI(user, getUserDeviceInfo(), { city: "Unknown", country_name: "Unknown" }, geoLocation);
             } else {
                 disableLinks();
             }
@@ -159,8 +184,7 @@
 
     <h2>FYBBA-CA Semester II Syllabus</h2>
     <table>
-        <tr><th>Course Type</th><th>Course</th><th>Paper Title</th></tr>
-        <tr><td>Major Mandatory</td><td>Major Mandatory 4</td><td><a href="advance_c.html">Advance C Programming</a></td></tr>
+<tr><td>Major Mandatory</td><td>Major Mandatory 4</td><td><a href="advance_c.html">Advance C Programming</a></td></tr>
         <tr><td>Major Mandatory</td><td>Major Mandatory 5</td><td><a href="rdbms.html">Relational Database Management System (RDBMS)</a></td></tr>
         <tr><td>Minor</td><td>Minor 1</td><td><a href="management.html">Principle and Practices of Management</a></td></tr>
         <tr><td>Open Elective (OE)</td><td>Open Elective 3</td><td><a href="data_science.html">Introduction to Data Science</a></td></tr>
