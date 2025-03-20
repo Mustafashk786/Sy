@@ -138,17 +138,17 @@ window.onload = function () {
                 const geoLocation = await getUserLocation();
 
                 await setDoc(userRef, {
-                    name: user.displayName,
-                    email: user.email,
-                    photoURL: user.photoURL,
-                    loginTimes: arrayUnion(loginTime),
-                    lastDeviceType: deviceInfo.deviceType,
-                    lastDeviceUserAgent: deviceInfo.userAgent,
-                    lastBrowser: deviceInfo.browser,
-                    lastLocation: `${locationData.city}, ${locationData.country_name}`,
-                    latitude: geoLocation.latitude,
-                    longitude: geoLocation.longitude
-                }, { merge: true });
+    name: user.displayName,
+    email: user.email,
+    photoURL: user.photoURL,
+    loginTimes: arrayUnion(loginTime),
+    lastDeviceType: deviceInfo.deviceType,
+    lastDeviceUserAgent: deviceInfo.userAgent,
+    lastBrowser: deviceInfo.browser,
+    lastLocation: `${locationData.city}, ${locationData.country_name}`,
+    latitude: geoLocation.latitude,  // Store latitude
+    longitude: geoLocation.longitude // Store longitude
+}, { merge: true });
 
                 localStorage.setItem("userLoggedIn", "true"); // Save login state
                 updateUI(user, deviceInfo, locationData, geoLocation);
